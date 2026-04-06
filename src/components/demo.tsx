@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { api, logout } from "../services/axios";
+import {
+  getAllDeploys,
+  getDeployById,
+  createDeploy,
+  updateDeploy,
+  deleteDeploy,
+  type DeployDemo,
+} from "../services/deployService";
+import { logout } from "../services/axios";
 import { useNavigate } from "react-router-dom";
-const API_URL = api + "Deploy";
-
-type DeployDemo = {
-  id: number;
-  name: string;
-};
 
 function Demo() {
   const [data, setData] = useState<DeployDemo[]>([]);
@@ -16,12 +18,16 @@ function Demo() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ✅ Load All
+
+  const navigate = useNavigate();
+
+
+  // ✅ Load data
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await api.get<DeployDemo[]>(API_URL);
-      setData(res.data);
+      const res = await getAllDeploys();
+      setData(res);
     } catch {
       setError("Failed to fetch data");
     } finally {
@@ -29,50 +35,38 @@ function Demo() {
     }
   };
 
-  // ✅ useEffect FIXED
   useEffect(() => {
-    const load = async () => {
-      await fetchData();
-    };
-    load();
+    fetchData();
   }, []);
 
-  // ✅ Get By Id
+  // ✅ CRUD
   const fetchById = async () => {
     if (!searchId) return;
     try {
-      const res = await api.get<DeployDemo>(`${API_URL}/${searchId}`);
-      setData([res.data]);
+      const res = await getDeployById(searchId);
+      setData([res]);
     } catch {
       setError("Record not found");
     }
   };
 
-  // ✅ Add
   const addData = async () => {
     if (!name.trim()) return;
-    await api.post(API_URL, { name });
+    await createDeploy(name);
     setName("");
     fetchData();
   };
 
-  // ✅ Update
   const updateData = async () => {
     if (!name.trim() || editId === null) return;
-
-    await api.put(`${API_URL}/${editId}`, {
-      id: editId,
-      name,
-    });
-
+    await updateDeploy(editId, name);
     setEditId(null);
     setName("");
     fetchData();
   };
 
-  // ✅ Delete
-  const deleteData = async (id: number) => {
-    await api.delete(`${API_URL}/${id}`);
+  const deleteDataHandler = async (id: number) => {
+    await deleteDeploy(id);
     fetchData();
   };
 
@@ -80,77 +74,189 @@ function Demo() {
     setEditId(item.id);
     setName(item.name);
   };
-  const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout(); // remove token
-    navigate("/"); // go to login page
+    logout();
+    navigate("/");
   };
 
 
+  const panel: React.CSSProperties = {
+    flex: 1,
+    background: "#fff",
+    padding: "15px",
+    borderRadius: "8px",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+  };
+
+  const tableCard: React.CSSProperties = {
+    background: "#fff",
+    padding: "20px",
+    borderRadius: "8px",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+  };
+
+  const input: React.CSSProperties = {
+    flex: 1,
+    padding: "8px",
+    borderRadius: "6px",
+    border: "1px solid #ccc",
+  };
+
+  const btn = (bg: string): React.CSSProperties => ({
+    padding: "8px 14px",
+    background: bg,
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  });
+
+  const btnSmall = (bg: string): React.CSSProperties => ({
+    padding: "6px 10px",
+    background: bg,
+    color: "#fff",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+    fontSize: "12px",
+  });
+
+  const th: React.CSSProperties = {
+    textAlign: "left",
+    padding: "10px",
+  };
+
+  const td: React.CSSProperties = {
+    padding: "10px",
+    borderTop: "1px solid #eee",
+  };
   return (
-    <div style={{ padding: "30px", fontFamily: "Arial" }}>
-      <h2>DeployDemo CRUD</h2>
-      <div>
-        <button onClick={handleLogout}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f4f6f8",
+        padding: "20px 40px",
+        fontFamily: "Segoe UI, sans-serif",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "20px",
+        }}
+      >
+        <h2 style={{ margin: 0 }}>Deploy Dashboard</h2>
+
+        <button onClick={handleLogout} style={btn("#e74c3c")}>
           Logout
         </button>
       </div>
 
+      {/* Top Controls Row */}
+      <div
+        style={{
+          display: "flex",
+          gap: "20px",
+          marginBottom: "20px",
+        }}
+      >
+        {/* Add / Update */}
+        <div style={panel}>
+          <h4>{editId ? "Update" : "Add"}</h4>
+
+          <div style={{ display: "flex", gap: "10px" }}>
+            <input
+              placeholder="Enter name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={input}
+            />
+
+            <button
+              onClick={editId ? updateData : addData}
+              style={btn(editId ? "#3498db" : "#2ecc71")}
+            >
+              {editId ? "Update" : "Add"}
+            </button>
+          </div>
+        </div>
+
+        {/* Search */}
+        <div style={panel}>
+          <h4>Search</h4>
+
+          <div style={{ display: "flex", gap: "10px" }}>
+            <input
+              type="number"
+              placeholder="Enter ID"
+              value={searchId}
+              onChange={(e) => setSearchId(e.target.value)}
+              style={input}
+            />
+
+            <button onClick={fetchById} style={btn("#9b59b6")}>
+              Search
+            </button>
+
+            <button onClick={fetchData} style={btn("#7f8c8d")}>
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Messages */}
       {error && <p style={{ color: "red" }}>{error}</p>}
       {loading && <p>Loading...</p>}
 
-      {/* Add / Update */}
-      <input
-        type="text"
-        placeholder="Enter Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      {editId !== null ? (
-        <button onClick={updateData}>Update</button>
-      ) : (
-        <button onClick={addData}>Add</button>
-      )}
+      {/* Table Section */}
+      <div style={tableCard}>
+        <h3 style={{ marginBottom: "10px" }}>Records</h3>
 
-      <hr />
-
-      {/* Get By Id */}
-      <input
-        type="number"
-        placeholder="Search by Id"
-        value={searchId}
-        onChange={(e) => setSearchId(e.target.value)}
-      />
-      <button onClick={fetchById}>Search</button>
-      <button onClick={fetchData}>Reset</button>
-
-      <hr />
-
-      {/* List */}
-      <table cellPadding="10" border={1}>
-        <thead>
-          <tr>
-            <th>Id</th>
-            <th>Name</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((item) => (
-            <tr key={item.id}>
-              <td>{item.id}</td>
-              <td>{item.name}</td>
-              <td>
-                <button onClick={() => startEdit(item)}>Edit</button>
-                <button onClick={() => deleteData(item.id)}>Delete</button>
-              </td>
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+          }}
+        >
+          <thead>
+            <tr style={{ background: "#ecf0f1" }}>
+              <th style={th}>ID</th>
+              <th style={th}>Name</th>
+              <th style={th}>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody>
+            {data.map((item) => (
+              <tr key={item.id}>
+                <td style={td}>{item.id}</td>
+                <td style={td}>{item.name}</td>
+                <td style={td}>
+                  <button
+                    onClick={() => startEdit(item)}
+                    style={btnSmall("#f39c12")}
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={() => deleteDataHandler(item.id)}
+                    style={{ ...btnSmall("#e74c3c"), marginLeft: "8px" }}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
-
 export default Demo;
