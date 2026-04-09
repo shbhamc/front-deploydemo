@@ -1,8 +1,9 @@
-import axios from "axios";
+import axios, { type AxiosRequestHeaders } from "axios";
+import { msalInstance, tokenRequest } from "../msalConfig";
 
 // 1️⃣ Create axios instance (recommended)
-   
 export const api = axios.create({
+
   baseURL: import.meta.env.VITE_BASE_API_URL,
   headers: {
     "Content-Type": "application/json",
@@ -11,11 +12,26 @@ export const api = axios.create({
 
 // ✅ REQUEST INTERCEPTOR (Attach Token Automatically)
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
+  async (config) => {
+    if (!config) return config;
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+      try {
+        const tokenResponse = await msalInstance.acquireTokenSilent({
+          ...tokenRequest,
+          account: accounts[0],
+        });
+
+        if (tokenResponse?.accessToken) {
+          config.headers = {
+            ...(config.headers as Record<string, string>),
+            Authorization: `Bearer ${tokenResponse.accessToken}`,
+          } as AxiosRequestHeaders;
+        }
+      } catch (error) {
+        console.warn("MSAL token acquisition failed", error);
+      }
     }
 
     return config;
@@ -43,29 +59,6 @@ api.interceptors.response.use(
 
 // 2️⃣ Get tasks
 export const getTasks = async () => {
-  const token = localStorage.getItem("token"); // add JWT if needed
-
-  const res = await api.get("tasks", {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : ""
-    }
-  });
-
+  const res = await api.get("tasks");
   console.log(res.data);
-};
-
-// 3️⃣ Login and store token
-export const logins = async (param: { username?: string; password?: string }) => {
-  const res = await api.post("Deploy/login", {
-    username: param?.username,
-    password: param?.password
-  });
-
-  // Save JWT to localStorage
-  localStorage.setItem("token", res.data.token);
-  return res;
-};
-
-export const logout = () => {
-  localStorage.removeItem("token");
 };

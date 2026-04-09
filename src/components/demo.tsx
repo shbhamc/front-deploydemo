@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useMsal } from "@azure/msal-react";
 import {
   getAllDeploys,
   getDeployById,
@@ -7,19 +8,15 @@ import {
   deleteDeploy,
   type DeployDemo,
 } from "../services/deployService";
-import { logout } from "../services/axios";
-import { useNavigate } from "react-router-dom";
 
 function Demo() {
+  const { instance } = useMsal();
   const [data, setData] = useState<DeployDemo[]>([]);
   const [name, setName] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
   const [searchId, setSearchId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-
-  const navigate = useNavigate();
 
 
   // ✅ Load data
@@ -75,9 +72,14 @@ function Demo() {
     setName(item.name);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await instance.logoutRedirect({
+        postLogoutRedirectUri: window.location.origin,
+      });
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
   };
 
 

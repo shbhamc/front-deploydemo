@@ -1,51 +1,34 @@
-import { useState } from "react";
-import { logins } from "../services/axios";
-import { useNavigate } from "react-router-dom";
+import { useMsal, useIsAuthenticated } from "@azure/msal-react";
+import { Navigate } from "react-router-dom";
+import { loginRequest } from "../msalConfig";
 
 function Login() {
+  const { instance } = useMsal();
+  const isAuthenticated = useIsAuthenticated();
 
-    const navigate = useNavigate();
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
+  const signIn = async () => {
+    try {
+      await instance.loginRedirect(loginRequest);
+    } catch (error) {
+      console.error("MSAL login failed", error);
+    }
+  };
 
-    const login = async () => {
+  if (isAuthenticated) {
+    return <Navigate to="/demo" replace />;
+  }
 
-        try {
-            await logins({
-                username: username,
-                password: password
-            });
-
-            // Navigate after successful login
-            navigate("/demo");
-
-        } catch (error) {
-            console.log(error);
-        }
-    };
-    const label: React.CSSProperties = {
-        fontSize: "14px",
-        color: "#555",
-    };
-
-    const input: React.CSSProperties = {
-        width: "100%",
-        padding: "10px",
-        marginTop: "5px",
-        borderRadius: "6px",
-        border: "1px solid #ccc",
-    };
-
-    const btn: React.CSSProperties = {
-        width: "100%",
-        padding: "10px",
-        background: "#3498db",
-        color: "#fff",
-        border: "none",
-        borderRadius: "6px",
-        cursor: "pointer",
-        fontWeight: "bold",
-    };
+  const btn: React.CSSProperties = {
+    width: "100%",
+    padding: "14px",
+    background: "#0078d4",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "bold",
+    fontSize: "16px",
+  };
 
     return (
         <div
@@ -94,36 +77,14 @@ function Login() {
                         boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
                     }}
                 >
-                    <h2 style={{ marginBottom: "25px" }}>Login</h2>
+                    <h2 style={{ marginBottom: "25px" }}>Azure Entra ID Login</h2>
 
-                    {/* Username */}
-                    <div style={{ marginBottom: "15px" }}>
-                        <label style={label}>Username</label>
-                        <input
-                            type="text"
-                            placeholder="Enter username"
-                            onChange={(e) => setUsername(e.target.value)}
-                            style={input}
-                        />
-                    </div>
+                    <p style={{ marginBottom: "30px", color: "#444" }}>
+                        Click the button below and sign in with your Entra ID account.
+                    </p>
 
-                    {/* Password */}
-                    <div style={{ marginBottom: "20px" }}>
-                        <label style={label}>Password</label>
-                        <input
-                            type="password"
-                            placeholder="Enter password"
-                            onChange={(e) => setPassword(e.target.value)}
-                            style={input}
-                        />
-                    </div>
-
-                    {/* Button */}
-                    <button
-                        onClick={login}
-                        style={btn}
-                    >
-                        Login
+                    <button onClick={signIn} style={btn}>
+                        Sign in with Entra ID
                     </button>
                 </div>
             </div>

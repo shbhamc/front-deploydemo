@@ -1,6 +1,7 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet } from "react-router-dom";
+import { useIsAuthenticated } from "@azure/msal-react";
 
 export const ProtectedRoute = () => {
-  const isAuthenticated = !!localStorage.getItem('token'); // Check your login logic
+  const isAuthenticated = useIsAuthenticated();
   return isAuthenticated ? <Outlet /> : <Navigate to="/" replace />;
 };
