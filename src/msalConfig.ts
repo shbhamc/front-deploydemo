@@ -8,7 +8,7 @@ export const msalConfig = {
   auth: {
     clientId: "bc982842-3b01-4cd9-9470-5385e2aa1616",
     authority: "https://login.microsoftonline.com/1dd0771c-5eff-4812-bf13-92380ca8b2aa",
-    redirectUri: "https://brave-rock-09d4f300f.4.azurestaticapps.net",
+    redirectUri: "https://lively-dune-0aa537a0f.7.azurestaticapps.net/",
   },
   cache: {
     cacheLocation: "sessionStorage",
